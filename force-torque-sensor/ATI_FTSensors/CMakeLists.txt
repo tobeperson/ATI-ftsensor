@@ -1,0 +1,58 @@
+cmake_minimum_required(VERSION 2.8)
+project( FTSensors )
+
+if(NOT CMAKE_COMPILER_IS_GNUCXX)
+	message(ERROR "The compiler ${CMAKE_CXX_COMPILER} is not a GNU C++ compiler. Please use a GNU C++ compiler.")
+endif()
+
+if (CMAKE_VERSION VERSION_LESS "3.1")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+else()
+	set(CMAKE_CXX_STANDARD 11)
+	set(CMAKE_CXX_STANDARD_REQUIRED ON)
+endif()
+
+if(WIN32)
+	#required to suppress the boost warning
+	add_definitions(-D _WIN32_WINNT=0x0501)
+endif()
+
+IF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+        SET(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/bin CACHE PATH "The directory to use for installing the library" FORCE) 
+ENDIF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+SET(LIBRARY_OUTPUT_PATH ${CMAKE_INSTALL_PREFIX}/lib)
+
+find_package(Boost 1.6 REQUIRED COMPONENTS system thread atomic chrono)
+
+include_directories(${Boost_INCLUDE_DIRS})
+include_directories(include)
+
+add_library(FTSensors STATIC src/${PROJECT_NAME}.cpp)
+
+if(WIN32)
+	target_link_libraries(FTSensors ${Boost_LIBRARIES} ws2_32)
+else()
+	target_link_libraries(FTSensors ${Boost_LIBRARIES})
+endif()
+
+#####################################################################
+#Build test app
+#####################################################################
+
+SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_INSTALL_PREFIX}/test/bin)
+
+include_directories(${PROJECT_SOURCE_DIR}/include)
+include_directories(${PROJECT_SOURCE_DIR}/test/include)
+
+link_directories(${CMAKE_INSTALL_PREFIX}/lib)
+
+add_executable( ATI_NetBox_FT_Sensor ${PROJECT_SOURCE_DIR}/test/src/ATI_NetBox_FT_Sensor.cpp )
+add_dependencies( ATI_NetBox_FT_Sensor 
+	FTSensors
+)
+
+if(WIN32)
+	target_link_libraries(ATI_NetBox_FT_Sensor FTSensors ${Boost_LIBRARIES} ws2_32)
+else()
+	target_link_libraries(ATI_NetBox_FT_Sensor FTSensors ${Boost_LIBRARIES})
+endif()
